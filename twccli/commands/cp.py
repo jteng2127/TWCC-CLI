@@ -24,15 +24,16 @@ class ProgressPercentage(object):
         self._lock = threading.Lock()
 
         # sys.stdout.write('\n')
+
     def __call__(self, bytes_amount):
         def convertSize(size):
-            if (size == 0):
-                return '0B'
+            if size == 0:
+                return "0B"
             size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
             i = int(math.floor(math.log(size, 1024)))
             p = math.pow(1024, i)
-            s = round(size/p, 2)
-            return '%.2f %s' % (s, size_name[i])
+            s = round(size / p, 2)
+            return "%.2f %s" % (s, size_name[i])
 
         # To simplify, assume this is hooked up to a single filename
         with self._lock:
@@ -40,24 +41,36 @@ class ProgressPercentage(object):
             done = int(50 * self._seen_so_far / self._size)
             percentage = (self._seen_so_far / self._size) * 100
             sys.stdout.write(
-                "\r[%s%s] %s  %s / %s  (%.2f%%) " % ('=' * done, ' ' * (50-done),
-                                                     self._filename, convertSize(
-                                                         self._seen_so_far), convertSize(self._size),
-                                                     percentage))
+                "\r[%s%s] %s  %s / %s  (%.2f%%) "
+                % (
+                    "=" * done,
+                    " " * (50 - done),
+                    self._filename,
+                    convertSize(self._seen_so_far),
+                    convertSize(self._size),
+                    percentage,
+                )
+            )
             sys.stdout.flush()
 
 
 def upload(bkt_name, local_dir=None, filename=None):
     twcc_s3 = S3()
-    absfn = abspath(filename) if isNone(
-        local_dir) else join(abspath(local_dir), filename)
-    okey = relpath(filename) if isNone(
-        local_dir) else join(relpath(local_dir), filename)
+    absfn = (
+        abspath(filename) if isNone(local_dir) else join(abspath(local_dir), filename)
+    )
+    okey = (
+        relpath(filename) if isNone(local_dir) else join(relpath(local_dir), filename)
+    )
     # twcc_s3.s3_cli.upload_file(absfn, bkt_name, okey)
     try:
-        response = twcc_s3.s3_cli.upload_file(absfn, bkt_name, okey,
-                                              Callback=ProgressPercentage(okey, os.stat(absfn).st_size))
-        sys.stdout.write('\n')
+        response = twcc_s3.s3_cli.upload_file(
+            absfn,
+            bkt_name,
+            okey,
+            Callback=ProgressPercentage(okey, os.stat(absfn).st_size),
+        )
+        sys.stdout.write("\n")
     except ClientError as e:
         print(str(e))
         raise ClientError
@@ -69,27 +82,33 @@ def download(bkt_name, dest_fn=None, cos_key=None):
     # twcc_s3.s3_cli.download_file(bkt_name, cos_key, dest_fn)
     try:
         response = twcc_s3.s3_cli.download_file(
-            bkt_name, cos_key, dest_fn,
-            Callback=ProgressPercentage(cos_key, (twcc_s3.s3_cli.head_object(
-                Bucket=bkt_name, Key=cos_key))["ContentLength"])
+            bkt_name,
+            cos_key,
+            dest_fn,
+            Callback=ProgressPercentage(
+                cos_key,
+                (twcc_s3.s3_cli.head_object(Bucket=bkt_name, Key=cos_key))[
+                    "ContentLength"
+                ],
+            ),
         )
-        sys.stdout.write('\n')
+        sys.stdout.write("\n")
     except ClientError as e:
         print(str(e))
         raise ClientError
 
 
 def list_objects(bucket_name):
-    NextMarker = ''
+    NextMarker = ""
     first_page = {}
     while True:
         res = S3().s3_cli.list_objects(Bucket=bucket_name, Marker=NextMarker)
-        if NextMarker == '':
+        if NextMarker == "":
             first_page.update(res)
         else:
-            first_page['Contents'].extend(res['Contents'])
-        if 'NextMarker' in res:
-            NextMarker = res['NextMarker']
+            first_page["Contents"].extend(res["Contents"])
+        if "NextMarker" in res:
+            NextMarker = res["NextMarker"]
         else:
             break
     return first_page
@@ -98,15 +117,16 @@ def list_objects(bucket_name):
 
 # end original code ===============================================
 # Create groups for command
-CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
+CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 
 @click.group(context_settings=CONTEXT_SETTINGS, help="Upload / Download files")
 def cli():
     try:
         ga = GenericService()
-        func_call = '_'.join([i for i in sys.argv[1:] if re.findall(
-            r'\d', i) == [] and not i == '-sv']).replace('-', '')
+        func_call = "_".join(
+            [i for i in sys.argv[1:] if re.findall(r"\d", i) == [] and not i == "-sv"]
+        ).replace("-", "")
         ga._send_ga(func_call)
     except Exception as e:
         logger.warning(e)
@@ -114,23 +134,31 @@ def cli():
 
 
 @click.command(help="'Upload/Download' COS (Cloud Object Storage) files.")
-@click.option('-sync', '--synchronized', 'sync', type=click.Choice(['to-cos', 'from-cos'], case_sensitive=False), default="to-cos",
-              help='to-cos/from-cos', show_default=True)
-@click.option('-dir', '--directory', 'tdir',
-              help='Path of the source directory.')
-@click.option('-okey', '--cos-key', 'okey',
-              help='File in Cloud.')
-@click.option('-fn', '--file-name', 'tfile',
-              help='Files for uploading from local site.')
-@click.option('-bkt', '--bucket-name', 'bkt',
-              help='Upload files or folders to the bucket.')
+@click.option(
+    "-sync",
+    "--synchronized",
+    "sync",
+    type=click.Choice(["to-cos", "from-cos"], case_sensitive=False),
+    default="to-cos",
+    help="to-cos/from-cos",
+    show_default=True,
+)
+@click.option("-dir", "--directory", "tdir", help="Path of the source directory.")
+@click.option("-okey", "--cos-key", "okey", help="File in Cloud.")
+@click.option(
+    "-fn", "--file-name", "tfile", help="Files for uploading from local site."
+)
+@click.option(
+    "-bkt", "--bucket-name", "bkt", help="Upload files or folders to the bucket."
+)
 @pass_environment
 def cos(env, sync, tdir, okey, tfile, bkt):
     # cp cos -bkt b_name -dir local_dir key key fn filename -sync to-cos/from-cos
 
-    if not sync in set(['from-cos', 'to-cos']):
+    if not sync in set(["from-cos", "to-cos"]):
         raise click.MissingParameter(
-            param=click.get_current_context().command.params[0])
+            param=click.get_current_context().command.params[0]
+        )
 
     if sync == "to-cos":
         if not isNone(tfile):
@@ -138,9 +166,12 @@ def cos(env, sync, tdir, okey, tfile, bkt):
         else:
             if isNone(tdir):
                 raise click.MissingParameter(
-                    param=click.get_current_context().command.params[1])
+                    param=click.get_current_context().command.params[1]
+                )
 
-            for tfile in (chain.from_iterable(glob(join(x[0], '*')) for x in os.walk(tdir))):
+            for tfile in chain.from_iterable(
+                glob(join(x[0], "*")) for x in os.walk(tdir)
+            ):
                 if not isdir(tfile):
                     upload(bkt_name=bkt, filename=tfile)
 
@@ -150,10 +181,10 @@ def cos(env, sync, tdir, okey, tfile, bkt):
             absfn = join(abspath(tdir), okey)
             download(bkt, dest_fn=absfn, cos_key=okey)
         else:
-            objs = list_objects(bucket_name=bkt)['Contents']
+            objs = list_objects(bucket_name=bkt)["Contents"]
             for obj in objs:
-                okey = obj['Key']
-                if okey[-1] == '/':
+                okey = obj["Key"]
+                if okey[-1] == "/":
                     continue
                 absfn = join(abspath(tdir), okey)
                 download(bkt, dest_fn=absfn, cos_key=okey)

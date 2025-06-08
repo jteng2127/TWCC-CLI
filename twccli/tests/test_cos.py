@@ -25,7 +25,7 @@ class TestCosLifecyc:
         print(cmd_list)
         result = self.runner.invoke(cli, cmd_list)
         print(result.output)
-        #assert result.exit_code == 0
+        # assert result.exit_code == 0
         return result.output
 
     def _create_bucket(self, bk):
@@ -47,7 +47,7 @@ class TestCosLifecyc:
 
         flag = True
         for ele in out:
-            if ele['Name'] == self.bk_name:
+            if ele["Name"] == self.bk_name:
                 flag = False
 
         assert flag
@@ -102,29 +102,26 @@ class TestCosLifecyc:
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         p.communicate()
 
-
     def _chk_bkt_versioning(self):
-        cmd_list = "ch cos --bucket-name {} --enable-versioning".format(
-            self.bk_name)
+        cmd_list = "ch cos --bucket-name {} --enable-versioning".format(self.bk_name)
         print(cmd_list)
         self.__run(cmd_list.split(" "))
 
         cmd_list = "ls cos --check-versioning --json-view".format(self.bk_name)
         print(cmd_list)
         out = json.loads(self.__run(cmd_list.split(" ")))
-        bkt_info = [x for x in out if x['Name'] == self.bk_name]
-        assert bkt_info[0]['Versioning'] == 'Enabled'
+        bkt_info = [x for x in out if x["Name"] == self.bk_name]
+        assert bkt_info[0]["Versioning"] == "Enabled"
 
-        cmd_list = "ch cos --bucket-name {} --disable-versioning".format(
-            self.bk_name)
+        cmd_list = "ch cos --bucket-name {} --disable-versioning".format(self.bk_name)
         print(cmd_list)
         self.__run(cmd_list.split(" "))
 
         cmd_list = "ls cos --check-versioning --json-view".format(self.bk_name)
         print(cmd_list)
         out = json.loads(self.__run(cmd_list.split(" ")))
-        bkt_info = [x for x in out if x['Name'] == self.bk_name]
-        assert bkt_info[0]['Versioning'] == 'Suspended'
+        bkt_info = [x for x in out if x["Name"] == self.bk_name]
+        assert bkt_info[0]["Versioning"] == "Suspended"
 
     # HERE is the test
 
@@ -135,6 +132,6 @@ class TestCosLifecyc:
         self._loadSession()
         self._loadParams()
         self._create_bucket(self.bk_name)
-        #self._chk_bkt_versioning()
+        # self._chk_bkt_versioning()
         self._del_bucket(self.bk_name)
         self._list_bucket_after_delete()

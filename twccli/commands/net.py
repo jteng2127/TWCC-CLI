@@ -1,7 +1,17 @@
-from twccli.twcc.services.compute import GpuSite, VcsSite, VcsSecurityGroup, VcsServerNet
+from twccli.twcc.services.compute import (
+    GpuSite,
+    VcsSite,
+    VcsSecurityGroup,
+    VcsServerNet,
+)
 from twccli.twcc.util import isNone, mk_names
 from twccli.twcc.services.compute import getServerId, getSecGroupList
-from twccli.twcc.services.compute_util import list_vcs, net_vcs_protocol_check, public_ip_assignee, max_min_port_check
+from twccli.twcc.services.compute_util import (
+    list_vcs,
+    net_vcs_protocol_check,
+    public_ip_assignee,
+    max_min_port_check,
+)
 from twccli.twccli import pass_environment, logger
 from twccli.twcc.services.base import Keypairs
 from twccli.twcc.services.generic import GenericService
@@ -10,25 +20,19 @@ import re
 import sys
 
 
-@click.command(help='Manage CCS (Container Compute Service) ports.')
-@click.option('-p',
-              '--port',
-              'port',
-              type=int,
-              required=True,
-              help='Port number.')
-@click.option('-s',
-              '--site-id',
-              'site_id',
-              type=int,
-              required=True,
-              help='ID of the container.')
-@click.option('-open/-close',
-              '--open-port/--close-port',
-              'isAttach',
-              is_flag=True,
-              show_default=True,
-              help='opens/close container ports.')
+@click.command(help="Manage CCS (Container Compute Service) ports.")
+@click.option("-p", "--port", "port", type=int, required=True, help="Port number.")
+@click.option(
+    "-s", "--site-id", "site_id", type=int, required=True, help="ID of the container."
+)
+@click.option(
+    "-open/-close",
+    "--open-port/--close-port",
+    "isAttach",
+    is_flag=True,
+    show_default=True,
+    help="opens/close container ports.",
+)
 @pass_environment
 def ccs(env, site_id, port, isAttach):
     """Command line for network function of ccs
@@ -51,144 +55,199 @@ def ccs(env, site_id, port, isAttach):
 
 
 def net_vcs_protocol_check(protocol):
-    avbl_proto = ['ah', 'pgm', 'tcp', 'ipv6-encap', 'dccp', 'igmp', 'icmp', 'esp', 'vrrp', 'ipv6-icmp', 'gre', 'sctp',
-                  'rsvp', 'ipv6-route', 'udp', 'ipv6-opts', 'ipv6-nonxt', 'udplite', 'egp', 'ipip', 'icmpv6', 'ipv6-frag', 'ospf']
+    avbl_proto = [
+        "ah",
+        "pgm",
+        "tcp",
+        "ipv6-encap",
+        "dccp",
+        "igmp",
+        "icmp",
+        "esp",
+        "vrrp",
+        "ipv6-icmp",
+        "gre",
+        "sctp",
+        "rsvp",
+        "ipv6-route",
+        "udp",
+        "ipv6-opts",
+        "ipv6-nonxt",
+        "udplite",
+        "egp",
+        "ipip",
+        "icmpv6",
+        "ipv6-frag",
+        "ospf",
+    ]
     if not protocol in avbl_proto:
-        pronum = re.findall(
-            '^([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])$', protocol)
+        pronum = re.findall("^([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])$", protocol)
         if pronum:
             protocol = str(int(pronum[0]))
         else:
-            raise ValueError(
-                "Protocol is not valid. available: {}.".format(avbl_proto))
+            raise ValueError("Protocol is not valid. available: {}.".format(avbl_proto))
 
 
 def public_ip_assignee(site_info, fip, eip):
     errorFlg = True
-    if len(site_info['public_ip']) > 0 and fip == False:
-        VcsServerNet().deAssociateIP(site_info['id'])
+    if len(site_info["public_ip"]) > 0 and fip == False:
+        VcsServerNet().deAssociateIP(site_info["id"])
         errorFlg = False
 
-    if len(site_info['public_ip']) == 0:
+    if len(site_info["public_ip"]) == 0:
         if not isNone(eip):
-            VcsServerNet().associateIP(site_info['id'], eip_id=eip)
+            VcsServerNet().associateIP(site_info["id"], eip_id=eip)
             errorFlg = False
         elif fip == True:
-            VcsServerNet().associateIP(site_info['id'])
+            VcsServerNet().associateIP(site_info["id"])
             errorFlg = False
     return errorFlg
 
 
 def max_min_port_check(portrange):
-    if re.findall('[^0-9-]', portrange):
-        raise ValueError('port range should be digital-digital')
+    if re.findall("[^0-9-]", portrange):
+        raise ValueError("port range should be digital-digital")
 
-    port_list = portrange.split('-')
+    port_list = portrange.split("-")
     if len(port_list) == 2:
         port_min, port_max = [int(mport) for mport in port_list]
         if port_min < 0 or port_max < 0:
-            raise ValueError('port range must bigger than 0')
+            raise ValueError("port range must bigger than 0")
         elif port_min > port_max:
-            raise ValueError(
-                'port_range_min must be <= port_range_max')
+            raise ValueError("port_range_min must be <= port_range_max")
     else:
-        raise ValueError('port range set error')
+        raise ValueError("port range set error")
     return port_min, port_max
+
 
 def net_vcs_protocol_check(protocol):
-    avbl_proto = ['ah', 'pgm', 'tcp', 'ipv6-encap', 'dccp', 'igmp', 'icmp', 'esp', 'vrrp', 'ipv6-icmp', 'gre', 'sctp', 'rsvp', 'ipv6-route', 'udp', 'ipv6-opts', 'ipv6-nonxt', 'udplite', 'egp', 'ipip', 'icmpv6', 'ipv6-frag', 'ospf']
+    avbl_proto = [
+        "ah",
+        "pgm",
+        "tcp",
+        "ipv6-encap",
+        "dccp",
+        "igmp",
+        "icmp",
+        "esp",
+        "vrrp",
+        "ipv6-icmp",
+        "gre",
+        "sctp",
+        "rsvp",
+        "ipv6-route",
+        "udp",
+        "ipv6-opts",
+        "ipv6-nonxt",
+        "udplite",
+        "egp",
+        "ipip",
+        "icmpv6",
+        "ipv6-frag",
+        "ospf",
+    ]
     if not protocol in avbl_proto:
-        pronum = re.findall('^([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])$',protocol)
+        pronum = re.findall("^([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])$", protocol)
         if pronum:
             protocol = str(int(pronum[0]))
         else:
-            raise ValueError(
-                "Protocol is not valid. available: {}.".format(avbl_proto))
+            raise ValueError("Protocol is not valid. available: {}.".format(avbl_proto))
+
 
 def public_ip_assignee(site_info, fip, eip):
     errorFlg = True
-    if len(site_info['public_ip']) > 0 and fip == False:
-        VcsServerNet().deAssociateIP(site_info['id'])
+    if len(site_info["public_ip"]) > 0 and fip == False:
+        VcsServerNet().deAssociateIP(site_info["id"])
         errorFlg = False
 
-    if len(site_info['public_ip']) == 0:
+    if len(site_info["public_ip"]) == 0:
         if not isNone(eip):
-            VcsServerNet().associateIP(site_info['id'], eip_id = eip)
+            VcsServerNet().associateIP(site_info["id"], eip_id=eip)
             errorFlg = False
         elif fip == True:
-            VcsServerNet().associateIP(site_info['id'])
+            VcsServerNet().associateIP(site_info["id"])
             errorFlg = False
     return errorFlg
 
-def max_min_port_check(portrange):
-    if re.findall('[^0-9-]', portrange):
-        raise ValueError('port range should be digital-digital')
 
-    port_list = portrange.split('-')
+def max_min_port_check(portrange):
+    if re.findall("[^0-9-]", portrange):
+        raise ValueError("port range should be digital-digital")
+
+    port_list = portrange.split("-")
     if len(port_list) == 2:
         port_min, port_max = [int(mport) for mport in port_list]
         if port_min < 0 or port_max < 0:
-            raise ValueError('port range must bigger than 0')
+            raise ValueError("port range must bigger than 0")
         elif port_min > port_max:
-            raise ValueError(
-                'port_range_min must be <= port_range_max')
+            raise ValueError("port_range_min must be <= port_range_max")
     else:
-        raise ValueError('port range set error')
+        raise ValueError("port range set error")
     return port_min, port_max
 
-@click.command(help='Manage VCS (Virtual Compute Service) security groups.')
-@click.option('-p', '--port', 'port', type=int, help='Port number.')
-@click.option('-s',
-              '--site-id',
-              'site_id',
-              type=int,
-              required=True,
-              help='ID of the container.')
-@click.option('-cidr',
-              '--cidr-network',
-              'cidr',
-              type=str,
-              help='Network range for security group.',
-              default=None,
-              show_default=True)
-@click.option('-fip / -nofip',
-              '--floating-ip / --no-floating-ip',
-              'fip',
-              is_flag=True,
-              default=None,
-              show_default=False,
-              help='Configure your instance with or without a floating IP.')
-@click.option('-ip',
-              '--eip',
-              'eip',
-              type=str,
-              default=None,
-              show_default=False,
-              help='Configure your instance with a EIP, using eip_id here.')
-@click.option('-in/-out',
-              '--ingress/--egress',
-              'is_ingress',
-              is_flag=True,
-              default=True,
-              show_default=True,
-              help='Applying security group directions.')
+
+@click.command(help="Manage VCS (Virtual Compute Service) security groups.")
+@click.option("-p", "--port", "port", type=int, help="Port number.")
 @click.option(
-    '-prange',
-    '--port-range',
-    'portrange',
-    type=str,
-    help='Port number from min-port to max-port, use "-" as delimiter, ie: 3000-3010. Only supported for TCP, UDP, UDPLITE, SCTP and DCCP'
+    "-s", "--site-id", "site_id", type=int, required=True, help="ID of the container."
 )
-@click.option('-proto',
-              '--protocol',
-              'protocol',
-              type=str,
-              help='Manage VCS security groups protocol.',
-              default='tcp',
-              show_default=True)
-@click.argument('site_ids', nargs=-1)
+@click.option(
+    "-cidr",
+    "--cidr-network",
+    "cidr",
+    type=str,
+    help="Network range for security group.",
+    default=None,
+    show_default=True,
+)
+@click.option(
+    "-fip / -nofip",
+    "--floating-ip / --no-floating-ip",
+    "fip",
+    is_flag=True,
+    default=None,
+    show_default=False,
+    help="Configure your instance with or without a floating IP.",
+)
+@click.option(
+    "-ip",
+    "--eip",
+    "eip",
+    type=str,
+    default=None,
+    show_default=False,
+    help="Configure your instance with a EIP, using eip_id here.",
+)
+@click.option(
+    "-in/-out",
+    "--ingress/--egress",
+    "is_ingress",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Applying security group directions.",
+)
+@click.option(
+    "-prange",
+    "--port-range",
+    "portrange",
+    type=str,
+    help='Port number from min-port to max-port, use "-" as delimiter, ie: 3000-3010. Only supported for TCP, UDP, UDPLITE, SCTP and DCCP',
+)
+@click.option(
+    "-proto",
+    "--protocol",
+    "protocol",
+    type=str,
+    help="Manage VCS security groups protocol.",
+    default="tcp",
+    show_default=True,
+)
+@click.argument("site_ids", nargs=-1)
 @pass_environment
-def vcs(env, site_ids, site_id, port, cidr, protocol, is_ingress, fip, portrange, eip):  # NOSONAR
+def vcs(
+    env, site_ids, site_id, port, cidr, protocol, is_ingress, fip, portrange, eip
+):  # NOSONAR
     """Command line for network function of vcs
     :param portrange: Port range number for your VCS environment
     :type portrange: string
@@ -219,49 +278,70 @@ def vcs(env, site_ids, site_id, port, cidr, protocol, is_ingress, fip, portrange
         # case 2: port setting
         if (not isNone(portrange) or not isNone(port)) and isNone(cidr):
             raise ValueError(
-                "Error: -cidr is required for port configuration.".format(site_id))
+                "Error: -cidr is required for port configuration.".format(site_id)
+            )
 
             from netaddr import IPNetwork
+
             IPNetwork(cidr)
 
-        secg_list = getSecGroupList(site_info['id'])
-        secg_id = secg_list['id']
+        secg_list = getSecGroupList(site_info["id"])
+        secg_id = secg_list["id"]
 
         if not isNone(portrange):
             port_min, port_max = max_min_port_check(portrange)
 
             secg = VcsSecurityGroup()
-            secg.addSecurityGroup(secg_id, port_min, port_max, cidr, protocol,
-                                  "ingress" if is_ingress else "egress")
+            secg.addSecurityGroup(
+                secg_id,
+                port_min,
+                port_max,
+                cidr,
+                protocol,
+                "ingress" if is_ingress else "egress",
+            )
             errorFlg = False
 
         if not isNone(port):
             secg = VcsSecurityGroup()
-            secg.addSecurityGroup(secg_id, port, port, cidr, protocol,
-                                  "ingress" if is_ingress else "egress")
+            secg.addSecurityGroup(
+                secg_id,
+                port,
+                port,
+                cidr,
+                protocol,
+                "ingress" if is_ingress else "egress",
+            )
             errorFlg = False
 
         if not isNone(cidr) and isNone(portrange) and isNone(port):
             secg = VcsSecurityGroup()
-            secg.addSecurityGroup(secg_id, None, None, cidr, protocol,
-                                  "ingress" if is_ingress else "egress")
+            secg.addSecurityGroup(
+                secg_id,
+                None,
+                None,
+                cidr,
+                protocol,
+                "ingress" if is_ingress else "egress",
+            )
             errorFlg = False
 
         if errorFlg:
-            raise ValueError(
-                "Error! Nothing to do! Check `--help` for detail.")
+            raise ValueError("Error! Nothing to do! Check `--help` for detail.")
 
 
-CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
+CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 
 @click.group(context_settings=CONTEXT_SETTINGS, help="NETwork related operations.")
 def cli():
     try:
         import sys
+
         ga = GenericService()
-        func_call = '_'.join([i for i in sys.argv[1:] if re.findall(
-            r'\d', i) == [] and not i == '-sv']).replace('-', '')
+        func_call = "_".join(
+            [i for i in sys.argv[1:] if re.findall(r"\d", i) == [] and not i == "-sv"]
+        ).replace("-", "")
         ga._send_ga(func_call)
     except Exception as e:
         logger.warning(e)

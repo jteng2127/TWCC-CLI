@@ -7,7 +7,16 @@ import json
 from pkg_resources import require
 from twccli.twcc.util import mk_names, isNone
 from twccli.twccli import pass_environment, logger
-from twccli.twcc.services.compute_util import change_vcs, change_vcsi, change_ccs, change_volume, change_loadbalancer, ch_ip_desc, get_ch_json_by_vlbid, ch_secg
+from twccli.twcc.services.compute_util import (
+    change_vcs,
+    change_vcsi,
+    change_ccs,
+    change_volume,
+    change_loadbalancer,
+    ch_ip_desc,
+    get_ch_json_by_vlbid,
+    ch_secg,
+)
 from twccli.twcc.services.base import acls, users, image_commit, Keypairs
 from twccli.twcc.services.s3_tools import S3
 
@@ -15,15 +24,17 @@ from twccli.twcc.services.s3_tools import S3
 # functions
 def set_object_public(bkt, okey_regex, is_public=False):
     import re
+
     s3 = S3()
     files = s3.list_object(bkt)
     if not isNone(okey_regex):
         for mfile in files:
-            if re.search(okey_regex, mfile[u'Key']):  # 會不會中招呀!?
-                s3.put_obj_acl(okey=mfile[u'Key'],
-                               bkt=bkt, is_public=is_public)
-                print("Making bucket-name: %s, object-key: %s, %s. " %
-                      (bkt, mfile[u'Key'], "public" if is_public else "non-public"))
+            if re.search(okey_regex, mfile["Key"]):  # 會不會中招呀!?
+                s3.put_obj_acl(okey=mfile["Key"], bkt=bkt, is_public=is_public)
+                print(
+                    "Making bucket-name: %s, object-key: %s, %s. "
+                    % (bkt, mfile["Key"], "public" if is_public else "non-public")
+                )
 
 
 def set_object_content_type(bkt, okey_regex, mime):
@@ -31,10 +42,12 @@ def set_object_content_type(bkt, okey_regex, mime):
     files = s3.list_object(bkt)
     if not isNone(okey_regex):
         for mfile in files:
-            if re.search(okey_regex, mfile[u'Key']):  # 會不會中招呀!?
-                s3.set_obj_contet_type(bkt, mfile[u'Key'], mime)
-                print("Making bucket-name: %s, object-key: %s, %s. " %
-                      (bkt, mfile[u'Key'], mime))
+            if re.search(okey_regex, mfile["Key"]):  # 會不會中招呀!?
+                s3.set_obj_contet_type(bkt, mfile["Key"], mime)
+                print(
+                    "Making bucket-name: %s, object-key: %s, %s. "
+                    % (bkt, mfile["Key"], mime)
+                )
 
 
 def set_versioning(bkt, versioning):
@@ -44,10 +57,12 @@ def set_versioning(bkt, versioning):
     else:
         s3.disable_versioning(bkt)
 
+
 def create_ch_template_vlb(vlb_id):
     if not isNone(vlb_id):
         ch_json = get_ch_json_by_vlbid(vlb_id)
     return ch_json
+
 
 def create_ch_template_vlb(vlb_id):
     if not isNone(vlb_id):
@@ -56,39 +71,67 @@ def create_ch_template_vlb(vlb_id):
 
 
 # Create groups for command
-CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
+CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 
 @click.group(context_settings=CONTEXT_SETTINGS, help="Change your TWCC resources.")
 def cli():
     try:
         from twccli.twcc.services.generic import GenericService
+
         ga = GenericService()
-        func_call = '_'.join([i for i in sys.argv[1:] if re.findall(
-            r'\d', i) == [] and not i == '-sv']).replace('-', '')
+        func_call = "_".join(
+            [i for i in sys.argv[1:] if re.findall(r"\d", i) == [] and not i == "-sv"]
+        ).replace("-", "")
         ga._send_ga(func_call)
     except Exception as e:
         logger.warning(e)
     pass
 
 
-@click.command(
-    help="'Change' details of your VCS (Virtual Compute Service) instances.")
-@click.option('-d', '--site-desc', 'desc', type=str, default='', help="Description of the instance.")
-@click.option('-s', '--site-id', 'name', type=int, help="ID of the instance.")
-@click.option('-keep/-nokeep', '--keep/--nokeep', 'keep', is_flag=True, default=None, help="Termination protection of the instance.")
-@click.option('-sts', '--vcs-status', type=click.Choice(['Ready', 'Stop', 'Reboot'], case_sensitive=False), help="Status of the instance.")
-@click.option('-table / -json',
-              '--table-view / --json-view',
-              'is_table',
-              is_flag=True,
-              default=True,
-              show_default=True,
-              help="Show information in Table view or JSON view.")
-@click.option('-wait', '--wait', 'wait',
-              is_flag=True, default=False, flag_value=True,
-              help='Wait until your instance to be provisioned.')
-@click.argument('site_ids_or_names', nargs=-1)
+@click.command(help="'Change' details of your VCS (Virtual Compute Service) instances.")
+@click.option(
+    "-d",
+    "--site-desc",
+    "desc",
+    type=str,
+    default="",
+    help="Description of the instance.",
+)
+@click.option("-s", "--site-id", "name", type=int, help="ID of the instance.")
+@click.option(
+    "-keep/-nokeep",
+    "--keep/--nokeep",
+    "keep",
+    is_flag=True,
+    default=None,
+    help="Termination protection of the instance.",
+)
+@click.option(
+    "-sts",
+    "--vcs-status",
+    type=click.Choice(["Ready", "Stop", "Reboot"], case_sensitive=False),
+    help="Status of the instance.",
+)
+@click.option(
+    "-table / -json",
+    "--table-view / --json-view",
+    "is_table",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Show information in Table view or JSON view.",
+)
+@click.option(
+    "-wait",
+    "--wait",
+    "wait",
+    is_flag=True,
+    default=False,
+    flag_value=True,
+    help="Wait until your instance to be provisioned.",
+)
+@click.argument("site_ids_or_names", nargs=-1)
 @pass_environment
 @click.pass_context
 def vcs(ctx, env, desc, site_ids_or_names, name, vcs_status, keep, is_table, wait):
@@ -106,22 +149,57 @@ def vcs(ctx, env, desc, site_ids_or_names, name, vcs_status, keep, is_table, wai
     :type is_table: bool
     """
     site_ids_or_names = mk_names(name, site_ids_or_names)
-    change_vcs(site_ids_or_names, str(
-        vcs_status).lower(), is_table, desc, keep, wait)
+    change_vcs(site_ids_or_names, str(vcs_status).lower(), is_table, desc, keep, wait)
 
 
-@click.command(
-    help="'Change' details of your system (bootable) images.")
-@click.option('-d', '--vcsi-desc', 'desc', type=str, default=None, help="Description of the instance.")
-@click.option('-id', '--vcsi-id', 'vcsi_id', type=int, help="ID of the instance.")
-@click.option('-table / -json',
-              '--table-view / --json-view',
-              'is_table',
-              is_flag=True,
-              default=True,
-              show_default=True,
-              help="Show information in Table view or JSON view.")
-@click.argument('site_ids_or_names', nargs=-1)
+@click.command(help="'Change' details of your system (bootable) images.")
+@click.option(
+    "-d",
+    "--vcsi-desc",
+    "desc",
+    type=str,
+    default=None,
+    help="Description of the instance.",
+)
+@click.option("-id", "--vcsi-id", "vcsi_id", type=int, help="ID of the instance.")
+@click.option(
+    "-table / -json",
+    "--table-view / --json-view",
+    "is_table",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Show information in Table view or JSON view.",
+)
+@click.argument("site_ids_or_names", nargs=-1)
+@pass_environment
+@click.pass_context
+def vcsi(ctx, env, desc, site_ids_or_names, vcsi_id, is_table):
+
+    site_ids_or_names = mk_names(vcsi_id, site_ids_or_names)
+    change_vcsi(site_ids_or_names, is_table, desc)
+
+
+@click.command(help="'Change' details of your system (bootable) images.")
+@click.option(
+    "-d",
+    "--vcsi-desc",
+    "desc",
+    type=str,
+    default=None,
+    help="Description of the instance.",
+)
+@click.option("-id", "--vcsi-id", "vcsi_id", type=int, help="ID of the instance.")
+@click.option(
+    "-table / -json",
+    "--table-view / --json-view",
+    "is_table",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Show information in Table view or JSON view.",
+)
+@click.argument("site_ids_or_names", nargs=-1)
 @pass_environment
 @click.pass_context
 def vcsi(ctx, env, desc, site_ids_or_names, vcsi_id, is_table):
@@ -131,61 +209,79 @@ def vcsi(ctx, env, desc, site_ids_or_names, vcsi_id, is_table):
 
 
 @click.command(
-    help="'Change' details of your system (bootable) images.")
-@click.option('-d', '--vcsi-desc', 'desc', type=str, default=None, help="Description of the instance.")
-@click.option('-id', '--vcsi-id', 'vcsi_id', type=int, help="ID of the instance.")
-@click.option('-table / -json',
-              '--table-view / --json-view',
-              'is_table',
-              is_flag=True,
-              default=True,
-              show_default=True,
-              help="Show information in Table view or JSON view.")
-@click.argument('site_ids_or_names', nargs=-1)
-@pass_environment
-@click.pass_context
-def vcsi(ctx, env, desc, site_ids_or_names, vcsi_id, is_table):
-    
-    site_ids_or_names = mk_names(vcsi_id, site_ids_or_names)
-    change_vcsi(site_ids_or_names, is_table, desc)
-
-@click.command(
-    help="'Change' details of your CCS (Container Computer Service) containers.")
-@click.option('-s', '--site-id', 'name', type=int, help="ID of the instance.")
-@click.option('-d', '--site-desc', 'desc', type=str, default='', help="Description of the instance.")
-@click.option('-keep/-nokeep', '--keep/--nokeep', 'keep', is_flag=True, default=None, help="Termination protection of the instance.")
-@click.option('-table / -json',
-              '--table-view / --json-view',
-              'is_table',
-              is_flag=True,
-              default=True,
-              show_default=True,
-              help="Show information in Table view or JSON view.")
-@click.argument('site_ids_or_names', nargs=-1)
+    help="'Change' details of your CCS (Container Computer Service) containers."
+)
+@click.option("-s", "--site-id", "name", type=int, help="ID of the instance.")
+@click.option(
+    "-d",
+    "--site-desc",
+    "desc",
+    type=str,
+    default="",
+    help="Description of the instance.",
+)
+@click.option(
+    "-keep/-nokeep",
+    "--keep/--nokeep",
+    "keep",
+    is_flag=True,
+    default=None,
+    help="Termination protection of the instance.",
+)
+@click.option(
+    "-table / -json",
+    "--table-view / --json-view",
+    "is_table",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Show information in Table view or JSON view.",
+)
+@click.argument("site_ids_or_names", nargs=-1)
 @pass_environment
 @click.pass_context
 def ccs(ctx, env, desc, site_ids_or_names, name, keep, is_table):
-    """Command line for Change CCS
-
-    """
+    """Command line for Change CCS"""
     site_ids_or_names = mk_names(name, site_ids_or_names)
     change_ccs(site_ids_or_names, is_table, desc, keep)
 
 
-@click.option('-s', '--site-id', type=str, help="ID of the instance.")
-@click.option('-id', '--disk-id', 'name', type=str,
-              help="Index of the disk.")
-@click.option('-sz', '--disk-size', 'vol_size', type=int, show_default=True,
-              help="Extend size of the disk. Must be greater than current size")
-@click.option('-sts', '--disk-status', 'vol_status', type=click.Choice(['attach', 'detach', 'extend'], case_sensitive=False),
-              help="Status of the disk.")
-@click.option('-wait', '--wait', 'wait',
-              is_flag=True, default=False, flag_value=True,
-              help='Wait until your instance to be provisioned.')
-@click.option('-table / -json', '--table-view / --json-view', 'is_table',
-              is_flag=True, default=True, show_default=True,
-              help="Show information in Table view or JSON view.")
-@click.argument('ids_or_names', nargs=-1)
+@click.option("-s", "--site-id", type=str, help="ID of the instance.")
+@click.option("-id", "--disk-id", "name", type=str, help="Index of the disk.")
+@click.option(
+    "-sz",
+    "--disk-size",
+    "vol_size",
+    type=int,
+    show_default=True,
+    help="Extend size of the disk. Must be greater than current size",
+)
+@click.option(
+    "-sts",
+    "--disk-status",
+    "vol_status",
+    type=click.Choice(["attach", "detach", "extend"], case_sensitive=False),
+    help="Status of the disk.",
+)
+@click.option(
+    "-wait",
+    "--wait",
+    "wait",
+    is_flag=True,
+    default=False,
+    flag_value=True,
+    help="Wait until your instance to be provisioned.",
+)
+@click.option(
+    "-table / -json",
+    "--table-view / --json-view",
+    "is_table",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Show information in Table view or JSON view.",
+)
+@click.argument("ids_or_names", nargs=-1)
 @click.command(help="Update status of your VDS (Virtual Disk Service).")
 @pass_environment
 @click.pass_context
@@ -209,34 +305,63 @@ def vds(ctx, env, name, ids_or_names, vol_status, vol_size, site_id, wait, is_ta
     """
     ids_or_names = mk_names(name, ids_or_names)
     if vol_status == None:
-        click.echo('you should input --vol-status')
-    if vol_status == 'extend' and vol_size == None:
-        click.echo('you should input -sz, must be greater than current size')
+        click.echo("you should input --vol-status")
+    if vol_status == "extend" and vol_size == None:
+        click.echo("you should input -sz, must be greater than current size")
     else:
-        change_volume(ids_or_names, vol_status,
-                      site_id, is_table, vol_size, wait)
+        change_volume(ids_or_names, vol_status, site_id, is_table, vol_size, wait)
 
 
-@click.option('-id', '--vlb-id', 'vlb_id', type=str,
-              help="Index of the load balancer.")
-@click.option('-ip', '--eip-id', 'eip_id', type=str, default=None,
-              help="Index of the EIP.")
-@click.option('-ms', '--members', type=str, default=None,
-              help="Change members of load balancer, default pools[0], ex: twccli ch vlb -id {$vlbid} -m 192.168.100.1:80,192.168.100.2:80")
-@click.option('-temp', '--template', 'template',
-              is_flag=True, default=False, flag_value=True,
-              help='Create template vlb json file.')
-@click.option('-wait', '--wait', 'wait',
-              is_flag=True, default=False, flag_value=True,
-              help='Wait until your instance to be provisioned.')
-@click.option('-table / -json', '--table-view / --json-view', 'is_table',
-              is_flag=True, default=True, show_default=True,
-              help="Show information in Table view or JSON view.")
-@click.option('-byjson', '--byjson', 'json_file', default="", show_default=False, type=str,
-              help="Change load balancer by json file.")
+@click.option("-id", "--vlb-id", "vlb_id", type=str, help="Index of the load balancer.")
+@click.option(
+    "-ip", "--eip-id", "eip_id", type=str, default=None, help="Index of the EIP."
+)
+@click.option(
+    "-ms",
+    "--members",
+    type=str,
+    default=None,
+    help="Change members of load balancer, default pools[0], ex: twccli ch vlb -id {$vlbid} -m 192.168.100.1:80,192.168.100.2:80",
+)
+@click.option(
+    "-temp",
+    "--template",
+    "template",
+    is_flag=True,
+    default=False,
+    flag_value=True,
+    help="Create template vlb json file.",
+)
+@click.option(
+    "-wait",
+    "--wait",
+    "wait",
+    is_flag=True,
+    default=False,
+    flag_value=True,
+    help="Wait until your instance to be provisioned.",
+)
+@click.option(
+    "-table / -json",
+    "--table-view / --json-view",
+    "is_table",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Show information in Table view or JSON view.",
+)
+@click.option(
+    "-byjson",
+    "--byjson",
+    "json_file",
+    default="",
+    show_default=False,
+    type=str,
+    help="Change load balancer by json file.",
+)
 @click.command(help="Update status of your vlb by listener.")
 @pass_environment
-def vlb(env, vlb_id,  members, eip_id, template, json_file, wait, is_table):
+def vlb(env, vlb_id, members, eip_id, template, json_file, wait, is_table):
     """Command line for list vlb
 
     :param vlb_id: Enter id for your load balancer.
@@ -256,54 +381,64 @@ def vlb(env, vlb_id,  members, eip_id, template, json_file, wait, is_table):
     """
     if template:
         ch_json = create_ch_template_vlb(vlb_id)
-        with open('vlb_ch_template', 'w') as fn:
+        with open("vlb_ch_template", "w") as fn:
             json.dump(ch_json, fn)
         click.echo("Create ch template vlb json file successfully.")
     else:
         json_data = None
         if json_file:
-            with open(json_file, 'r') as fn:
+            with open(json_file, "r") as fn:
                 json_data = json.load(fn)
-        change_loadbalancer(vlb_id, eip_id, json_data,
-                            members, wait, is_table,)
+        change_loadbalancer(
+            vlb_id,
+            eip_id,
+            json_data,
+            members,
+            wait,
+            is_table,
+        )
 
 
-@click.option('-bkt',
-              '--bucket-name',
-              'name',
-              default=None,
-              type=str,
-              help="Name of the Bucket.")
-@click.option('-okey',
-              '--object-key-name',
-              'okey',
-              default=None,
-              type=str,
-              help="Name of specific object key. Regular Expression compatible.")
-@click.option('-pub / -nopub',
-              '--set-public / --unset-public',
-              'is_public',
-              is_flag=True,
-              default=None,
-              show_default=True,
-              help="Set object to public or private.")
-@click.option('-mime',
-              '--set-content-type',
-              'mime',
-              type=str,
-              default=None,
-              help="Set content type for object.")
-@click.option('-ver / -nover',
-              '--enable-versioning / --disable-versioning',
-              'versioning',
-              is_flag=True,
-              default=None,
-              help="Enabled or Disabled versioning for a bucket.")
+@click.option(
+    "-bkt", "--bucket-name", "name", default=None, type=str, help="Name of the Bucket."
+)
+@click.option(
+    "-okey",
+    "--object-key-name",
+    "okey",
+    default=None,
+    type=str,
+    help="Name of specific object key. Regular Expression compatible.",
+)
+@click.option(
+    "-pub / -nopub",
+    "--set-public / --unset-public",
+    "is_public",
+    is_flag=True,
+    default=None,
+    show_default=True,
+    help="Set object to public or private.",
+)
+@click.option(
+    "-mime",
+    "--set-content-type",
+    "mime",
+    type=str,
+    default=None,
+    help="Set content type for object.",
+)
+@click.option(
+    "-ver / -nover",
+    "--enable-versioning / --disable-versioning",
+    "versioning",
+    is_flag=True,
+    default=None,
+    help="Enabled or Disabled versioning for a bucket.",
+)
 @click.command(help="Update permission of your objects.")
 @pass_environment
 def cos(env, name, okey, is_public, mime, versioning):
-    """Command line for change COS buckets and objects
-    """
+    """Command line for change COS buckets and objects"""
 
     if not isNone(mime):
         set_object_content_type(name, okey, mime=mime)
@@ -313,14 +448,25 @@ def cos(env, name, okey, is_public, mime, versioning):
         set_versioning(name, versioning)
 
 
-@click.option('-id', '--private-net-id', 'ip_id', type=int,
-              help="Index of the IP.")
-@click.option('-d', '--IP-description', 'desc', type=str, default=None,
-              help="Description of the IP.")
-@click.option('-table / -json', '--table-view / --json-view', 'is_table',
-              is_flag=True, default=True, show_default=True,
-              help="Show information in Table view or JSON view.")
-@click.argument('ids_or_names', nargs=-1)
+@click.option("-id", "--private-net-id", "ip_id", type=int, help="Index of the IP.")
+@click.option(
+    "-d",
+    "--IP-description",
+    "desc",
+    type=str,
+    default=None,
+    help="Description of the IP.",
+)
+@click.option(
+    "-table / -json",
+    "--table-view / --json-view",
+    "is_table",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Show information in Table view or JSON view.",
+)
+@click.argument("ids_or_names", nargs=-1)
 @click.command(help="Update desc of your IP.")
 @click.pass_context
 def eip(ctx, ip_id, desc, ids_or_names, is_table):
@@ -328,28 +474,70 @@ def eip(ctx, ip_id, desc, ids_or_names, is_table):
     ch_ip_desc(ids_or_names, desc, is_table)
 
 
-@click.option('-d', '--secg-description', 'desc', type=str, default=None,
-              help="Description of the security group.")
-@click.option('-id', '--security-group-id', 'secg_id', required=True, type=str, help="Index of the security group.")
-@click.option('-iid', '--instance-id', 'iid', type=int, help="ID(s) of the instance.")
-@click.option('-act', '--action', type=click.Choice(['desc', 'add', 'remove'], case_sensitive=False), default=None, help="The change action.")
-@click.option('-type', '--instance-type', 'type', type=click.Choice(['vcs'], case_sensitive=False), default='vcs', help="Tyep of your instance.")
-@click.option('-table / -json', '--table-view / --json-view', 'is_table',
-              is_flag=True, default=True, show_default=True,
-              help="Show information in Table view or JSON view.")
-@click.argument('ids_or_names', nargs=-1)
-@click.command(help="Update desc of your security group or security group to your instance.")
+@click.option(
+    "-d",
+    "--secg-description",
+    "desc",
+    type=str,
+    default=None,
+    help="Description of the security group.",
+)
+@click.option(
+    "-id",
+    "--security-group-id",
+    "secg_id",
+    required=True,
+    type=str,
+    help="Index of the security group.",
+)
+@click.option("-iid", "--instance-id", "iid", type=int, help="ID(s) of the instance.")
+@click.option(
+    "-act",
+    "--action",
+    type=click.Choice(["desc", "add", "remove"], case_sensitive=False),
+    default=None,
+    help="The change action.",
+)
+@click.option(
+    "-type",
+    "--instance-type",
+    "type",
+    type=click.Choice(["vcs"], case_sensitive=False),
+    default="vcs",
+    help="Tyep of your instance.",
+)
+@click.option(
+    "-table / -json",
+    "--table-view / --json-view",
+    "is_table",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Show information in Table view or JSON view.",
+)
+@click.argument("ids_or_names", nargs=-1)
+@click.command(
+    help="Update desc of your security group or security group to your instance."
+)
 @click.pass_context
 def secg(ctx, secg_id, iid, desc, action, type, ids_or_names, is_table):
-    action_dict = {'add': 'addSecurityGroup',
-                   'remove': 'removeSecurityGroup', 'desc': 'desc'}
-    if action == 'desc':
+    action_dict = {
+        "add": "addSecurityGroup",
+        "remove": "removeSecurityGroup",
+        "desc": "desc",
+    }
+    if action == "desc":
         ids_or_names = mk_names(secg_id, ids_or_names)
     else:
         ids_or_names = mk_names(iid, ids_or_names)
 
-    ch_secg(ids_or_names, desc=desc, is_table=is_table,
-            secg_id=secg_id, action=action_dict[action])
+    ch_secg(
+        ids_or_names,
+        desc=desc,
+        is_table=is_table,
+        secg_id=secg_id,
+        action=action_dict[action],
+    )
 
 
 cli.add_command(vcs)

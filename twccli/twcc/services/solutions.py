@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 from os import sys, path
+
 sys.path.append(path.dirname(path.abspath(__file__)))
 from generic import GenericService
 
 
 class solutions(GenericService):
-    """ This Class is for solutions api call
-    """
+    """This Class is for solutions api call"""
 
     def __init__(self):
-        """ constractor for this solutions class
+        """constractor for this solutions class
 
         Args:
             api_key_tag (str): see YAML for detail
@@ -20,11 +20,11 @@ class solutions(GenericService):
         self._csite_ = "goc"
 
     def list(self):
-        self.ext_get = {'project': self._project_id}
+        self.ext_get = {"project": self._project_id}
         return super(solutions, self).list()
 
     def list_vcs(self):
         GenericService.__init__(self, cluster_tag="VCS")
         self._csite_ = "goc"
-        self.ext_get = {'project': self._project_id, 'category':'os'}
+        self.ext_get = {"project": self._project_id, "category": "os"}
         return super(solutions, self).list()

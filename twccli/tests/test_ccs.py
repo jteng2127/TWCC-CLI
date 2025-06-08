@@ -8,16 +8,18 @@ from ..twcc.session import Session2
 from ..twccli import cli
 
 
-env_options = {"cicd_pytorch": (1, "PyTorch", "pytorch-19.11-py3:latest"),
-               "cicd_tensorflow": (1, "TensorFlow", "tensorflow-19.11-tf2-py3:latest"), }
+env_options = {
+    "cicd_pytorch": (1, "PyTorch", "pytorch-19.11-py3:latest"),
+    "cicd_tensorflow": (1, "TensorFlow", "tensorflow-19.11-tf2-py3:latest"),
+}
 
 
 class TestCntrLifecyc:
     def _loadParams(self):
         test_env = "cicd_pytorch"
         env_pick = env_options[test_env]
-        self.apikey = os.environ['_TWCC_API_KEY_']
-        self.pcode = os.environ['_TWCC_PROJECT_CODE_']
+        self.apikey = os.environ["_TWCC_API_KEY_"]
+        self.pcode = os.environ["_TWCC_PROJECT_CODE_"]
         self.cntr_name = test_env
         (self.gpu_num, self.sol, self.img_name) = env_pick
 
@@ -33,12 +35,13 @@ class TestCntrLifecyc:
         return result.output
 
     def _create(self):
-        cmd_list = u"mk ccs -n {} -gpu {} -itype {} -img {} -wait -json".format(
-            self.cntr_name, self.gpu_num, self.sol, self.img_name)
+        cmd_list = "mk ccs -n {} -gpu {} -itype {} -img {} -wait -json".format(
+            self.cntr_name, self.gpu_num, self.sol, self.img_name
+        )
         print(cmd_list)
-        self.create_out = self.__run(cmd_list.split(u" "))
+        self.create_out = self.__run(cmd_list.split(" "))
         ans = json.loads(self.create_out)
-        self.site_id = int(ans['id'])
+        self.site_id = int(ans["id"])
 
     def _list(self):
         assert type(int(self.site_id)) == type(1)
@@ -53,13 +56,13 @@ class TestCntrLifecyc:
         if isatt:
             flg = False
             for exp_port in out:
-                if exp_port['target_port'] == 3000:
+                if exp_port["target_port"] == 3000:
                     flg = True
             assert flg
         else:
             flg = True
             for exp_port in out:
-                if exp_port['target_port'] == 3000:
+                if exp_port["target_port"] == 3000:
                     flg = False
             assert flg
 

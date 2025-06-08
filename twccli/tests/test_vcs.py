@@ -14,17 +14,32 @@ from click.testing import CliRunner
 
 
 def get_private_ip_with_port():
-    return "%s:%s" % (".".join(["192", "168", "%s" % random.randrange(100, 200), "%s" % random.randrange(100, 200)]), random.randrange(1000, 2000))
+    return "%s:%s" % (
+        ".".join(
+            [
+                "192",
+                "168",
+                "%s" % random.randrange(100, 200),
+                "%s" % random.randrange(100, 200),
+            ]
+        ),
+        random.randrange(1000, 2000),
+    )
 
 
 class TestVcsLifecyc:
     def _loadParams(self):
         self.key_name = "twccli_{}".format(str(uuid.uuid1()).split("-")[0])
-        (self.flv, self.sol, self.sys_vol, self.network) = ("v.super", "centos", "HDD", 'woodpecker_net')  # self.sol=ubuntu
+        (self.flv, self.sol, self.sys_vol, self.network) = (
+            "v.super",
+            "centos",
+            "HDD",
+            "woodpecker_net",
+        )  # self.sol=ubuntu
         self.ext_port = "81"
         self.ext_port_range = "3000-3010"
-        self.apikey = os.environ['_TWCC_API_KEY_']
-        self.pcode = os.environ['_TWCC_PROJECT_CODE_']
+        self.apikey = os.environ["_TWCC_API_KEY_"]
+        self.pcode = os.environ["_TWCC_PROJECT_CODE_"]
 
     def _loadSession(self):
         self.runner = CliRunner()
@@ -46,14 +61,13 @@ class TestVcsLifecyc:
     def _create_key(self):
         cmd_list = "mk key --name {}".format(self.key_name)
         print(cmd_list)
-        self.create_out = self.__run(cmd_list.split(u" "))
+        self.create_out = self.__run(cmd_list.split(" "))
 
     def _get_latest_vcsi(self):
         cmd_list = "ls vcs -itype centos -img -json"
         print(cmd_list)
-        output = self.__run(cmd_list.split(u" "))
-        self.img = json.loads(output)[0]['VCSi Name']
-
+        output = self.__run(cmd_list.split(" "))
+        self.img = json.loads(output)[0]["VCSi Name"]
 
     def _list_key(self):
         cmd_list = "ls key -n {} -json".format(self.key_name)
@@ -67,24 +81,25 @@ class TestVcsLifecyc:
         print(out)
 
     def _create_vnet(self):
-        vnet_name = 'twccli_{}'.format(str(uuid.uuid1()).split("-")[0])
+        vnet_name = "twccli_{}".format(str(uuid.uuid1()).split("-")[0])
         cmd_list = "mk vnet -n {} -cidr 10.0.0.0/24 -gw 10.0.0.1 -json -wait".format(
-            vnet_name)
+            vnet_name
+        )
         print(cmd_list)
         out = self.__run(cmd_list.split(" "))
-        self.vnet_id = json.loads(out)['id']
+        self.vnet_id = json.loads(out)["id"]
 
     def _create_vlb(self):
-        cmd_list = "mk vlb --load_balance_name {} -wait -json".format(
-            'twccli_vlb')
+        cmd_list = "mk vlb --load_balance_name {} -wait -json".format("twccli_vlb")
         print(cmd_list)
         out = self.__run(cmd_list.split(" "))
         print(out)
-        self.vlb_id = json.loads(out)['id']
+        self.vlb_id = json.loads(out)["id"]
 
     def _add_member_vlb(self):
         cmd_list = "ch vlb --member {} {} -id {}".format(
-            get_private_ip_with_port(), get_private_ip_with_port(), self.vlb_id)
+            get_private_ip_with_port(), get_private_ip_with_port(), self.vlb_id
+        )
         print(cmd_list)
         out = self.__run(cmd_list.split(" "))
 
@@ -95,21 +110,31 @@ class TestVcsLifecyc:
         print(out)
 
     def _create_vcs(self):
-        paras = ["mk", "vcs",
-                 "--name",           self.key_name,
-                 "--image-type-name",self.sol,
-                 "--product-type",   self.flv,
-                 "-img",             self.img,
-                 "-net",             self.network,
-                 "--keypair",        self.key_name,
-                 "--system-volume-type", self.sys_vol,
-                 "-wait", "-json"
-                 ]
+        paras = [
+            "mk",
+            "vcs",
+            "--name",
+            self.key_name,
+            "--image-type-name",
+            self.sol,
+            "--product-type",
+            self.flv,
+            "-img",
+            self.img,
+            "-net",
+            self.network,
+            "--keypair",
+            self.key_name,
+            "--system-volume-type",
+            self.sys_vol,
+            "-wait",
+            "-json",
+        ]
         print("Using Params: %s" % " ".join(paras))
         out = self.__run(paras)
         print(out)
         print(json.loads(out))
-        self.vcs_id = json.loads(out)['id']
+        self.vcs_id = json.loads(out)["id"]
 
     def _list_vcs(self):
         cmd_list = "ls vcs -json"
@@ -138,16 +163,19 @@ class TestVcsLifecyc:
         out = self.__run(cmd_list.split(" "))
 
     def _add_secg_range(self):
-        cmd_list = "net vcs -prange {} -s {}".format(
-            self.ext_port_range, self.vcs_id)
+        cmd_list = "net vcs -prange {} -s {}".format(self.ext_port_range, self.vcs_id)
         print(cmd_list)
         out = self.__run(cmd_list.split(" "))
 
     def _add_secg_range_and_port(self):
-        cmd_list = "net vcs -cidr 192.168.255.0/24 -prange {} -s {}".format(self.ext_port_range, self.vcs_id)
+        cmd_list = "net vcs -cidr 192.168.255.0/24 -prange {} -s {}".format(
+            self.ext_port_range, self.vcs_id
+        )
         print(cmd_list)
         out = self.__run(cmd_list.split(" "))
-        cmd_list = "net vcs -cidr 192.168.254.0/24 -p {} -s {}".format(self.ext_port, self.vcs_id)
+        cmd_list = "net vcs -cidr 192.168.254.0/24 -p {} -s {}".format(
+            self.ext_port, self.vcs_id
+        )
         print(cmd_list)
         out = self.__run(cmd_list.split(" "))
 
@@ -162,9 +190,9 @@ class TestVcsLifecyc:
         out = self.__run(cmd_list.split(" "))
         jobj = json.loads(out)
         for ele in jobj:
-            if not isNone(ele['port_range_min']):
-                if int(self.ext_port) == int(ele['port_range_min']):
-                    self.secg_id = ele['id']
+            if not isNone(ele["port_range_min"]):
+                if int(self.ext_port) == int(ele["port_range_min"]):
+                    self.secg_id = ele["id"]
                     return True
         raise Exception("Error, can not find port {}".format(self.ext_port))
 
@@ -176,7 +204,8 @@ class TestVcsLifecyc:
 
     def _del_secg(self):
         cmd_list = "rm vcs -secg --force {} --site-id {}".format(
-            self.secg_id, self.vcs_id)
+            self.secg_id, self.vcs_id
+        )
         print(cmd_list)
         out = self.__run(cmd_list.split(" "))
         print(out)
@@ -205,13 +234,13 @@ class TestVcsLifecyc:
         self._list_key()
         self._create_vcs()
         # self._add_secg_range()
-        #self._add_secg_range_and_port()
-        #self._add_secg_without_range_and_port()
+        # self._add_secg_range_and_port()
+        # self._add_secg_without_range_and_port()
         self._list_vcs()
         # self._stop_vcs()
         # self._start_vcs()
         # self._add_secg()
-        #self._list_secg()
-        #self._del_secg()
+        # self._list_secg()
+        # self._del_secg()
         self._del_vcs()
         self._delete_key()
