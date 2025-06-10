@@ -28,3 +28,6 @@ wcwidth
 loguru
 distro
 feedparser
+paramiko
+questionary
+yaspin
