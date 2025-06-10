@@ -132,6 +132,16 @@ def _ask_log_path(container_name: str):
     return log_path
 
 
+def _ask_show_connection_info():
+    show_connection_info = questionary.confirm(
+        "Do you want to show connection info (ssh and jupyter)?",
+        default=True,
+    ).ask()
+    if show_connection_info is None:
+        raise ValueError("Cancelled by user.")
+    return show_connection_info
+
+
 def _ask_env_list():
     env_str = questionary.text(
         "Please enter environment variables in `K1=V1 K2=V2` format (optional):",
@@ -152,6 +162,7 @@ def _print_full_twcc_imk_ccs_command(
     env_list: list = None,
     cmd: str = None,
     rm_after_command: bool = False,
+    wait: bool = False,
     dry_run: bool = False,
 ):
     full_command = (
@@ -167,6 +178,8 @@ def _print_full_twcc_imk_ccs_command(
         full_command += f" \\\n  --cmd '{cmd}'"
     if rm_after_command:
         full_command += " \\\n  --rm"
+    if wait:
+        full_command += " \\\n  --wait"
     if dry_run:
         full_command += " \\\n  --dry-run"
     questionary.print(
@@ -433,9 +446,10 @@ def create_ccs_interactively(
         cmd = _ask_command()
         if cmd and not rm_after_command:
             rm_after_command = _ask_rm_after_command()
-        if log_path is None:
+        if cmd and log_path is None:
             log_path = _ask_log_path(container_name)
-        is_asked = True
+    if is_asked and not cmd and not wait:
+        wait = _ask_show_connection_info()
     if is_asked and not env_list:
         env_list = _ask_env_list()
         is_asked = True
@@ -448,6 +462,7 @@ def create_ccs_interactively(
             env_list,
             cmd,
             rm_after_command,
+            wait,
             dry_run,
         )
     try:
