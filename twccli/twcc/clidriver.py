@@ -224,7 +224,9 @@ class ServiceOperation:
                 twcc_error_echo(res[0].json()["detail"])
             else:
                 twcc_error_echo(res[0].json())
-            sys.exit(1)
+            raise requests.HTTPError(
+                f"HTTP Error {res[0].status_code}: {res[0].reason}"
+            )
 
         return self._std_output_(res, t_url, res_type)
 
