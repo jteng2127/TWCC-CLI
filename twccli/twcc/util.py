@@ -2,6 +2,7 @@ import datetime
 import json
 import os
 import re
+import shlex
 import socket
 import sys
 import threading
@@ -422,6 +423,15 @@ def name_validator(name):
     if re.match("^[a-z][a-z-_0-9]{5,15}$", name):
         return True
     return False
+
+
+def env_validator(env_line: str) -> bool:
+    pattern = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=.*$")
+    try:
+        pairs = shlex.split(env_line)
+    except ValueError:
+        return False
+    return all(pattern.match(pair) for pair in pairs)
 
 
 def mkCcsHostName(ip_addr):
