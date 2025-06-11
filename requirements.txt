@@ -9,7 +9,7 @@ boto3
 botocore
 certifi
 chardet<5.0.0
-Click==7.0
+click>=8.0,<9.0
 colorclass
 idna
 jmespath
