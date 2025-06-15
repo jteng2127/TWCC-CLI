@@ -1,18 +1,19 @@
 from datetime import datetime
-import hashlib
-import json
 import shlex
 import random
 import string
 import time
 import questionary
-import paramiko
 from questionary import Choice
 from yaspin import yaspin
 from twccli.twcc.services.compute import GpuSite
 from twccli.twcc.services.compute_util import (
     format_ccs_env_dict,
     get_pass_api_key_params,
+)
+from twccli.twcc.services.connections import (
+    get_connected_ssh_client,
+    get_connection_info,
 )
 from twccli.twcc.util import name_validator, env_validator
 
@@ -271,57 +272,40 @@ def _wait_for_container_ready(ccs_site: GpuSite, site_id: str):
     return site_info
 
 
-def _get_connection_info(
-    ccs_site: GpuSite,
-    site_id: str,
-    site_info: dict = None,
-    site_detail: dict = None,
-):
-    service_connection_info = {}
-    with yaspin(
-        text="Fetching connection info...", color="cyan", timer=True
-    ) as spinner:
-        if site_detail is None:
-            site_detail = ccs_site.getDetail(site_id)
-        if "Service" in site_detail:
-            if site_info is None:
-                site_info = ccs_site.queryById(site_id)
-            username = site_info.get("user", {}).get("username")
-            if username is None:
-                raise ValueError(
-                    f"Username not found in response for site {site_id}: {site_info}"
-                )
-
-            container_ports = site_detail["Pod"][0]["container"][0]["ports"]
-            container_port_to_name = {
-                port["port"]: port["name"] for port in container_ports
-            }
-
-            service_public_ip = site_detail["Service"][0]["annotations"][
-                "allocated-public-ip"
-            ]
-            service_ports = site_detail["Service"][0]["ports"]
-            service_connection_info = {
-                container_port_to_name[port["target_port"]]: {
-                    "protocol": port["protocol"],
-                    "target_port": port["target_port"],
-                    "port": port["port"],
-                    "hostname": service_public_ip,
-                    "username": username,
-                }
-                for port in service_ports
-            }
-
-            if "jupyter" in service_connection_info:
-                pod_name = site_detail["Pod"][0]["name"]
-                jupyter_token = hashlib.md5(pod_name.encode()).hexdigest()
-                service_connection_info["jupyter"]["token"] = jupyter_token
-        spinner.text = "Connection info fetched."
-        spinner.ok("V")
-    return service_connection_info
-
-
 def _do_ssh(
+    hostname: str,
+    port: int,
+    username: str,
+    commands: list[str],
+):
+    try:
+        client = get_connected_ssh_client(hostname, port, username)
+        yaspin_text = f"Sending commands to {username}@{hostname}:{port} ..."
+        with yaspin(text=yaspin_text, color="cyan", timer=True) as spinner:
+            try:
+                for command in commands:
+                    stdin, stdout, stderr = client.exec_command(command)
+                    out = stdout.read().decode()
+                    err = stderr.read().decode()
+
+                    if out:
+                        spinner.write(f"Output: {out}")
+                    if err:
+                        spinner.write(f"Error: {err}")
+                spinner.text = yaspin_text + " done"
+                spinner.ok("V")
+                client.close()
+                return True
+            except Exception as e:
+                spinner.text = f"Error executing commands: {str(e)}"
+                spinner.fail("X")
+                client.close()
+                return False
+    except:
+        return False
+
+
+def _do_ssh_and_remove_container(
     ccs_site: GpuSite,
     site_id: str,
     ssh_connection_info: dict,
@@ -348,64 +332,21 @@ def _do_ssh(
     hostname = ssh_connection_info["hostname"]
     port = ssh_connection_info["port"]
     username = ssh_connection_info["username"]
-    yaspin_text = f"Sending command to {username}@{hostname}:{port} ..."
-    with yaspin(text=yaspin_text, color="cyan", timer=True) as spinner:
-        client = paramiko.SSHClient()
-        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-        is_connected = False
-        try:
-            client.connect(
-                hostname=hostname,
-                port=port,
-                username=username,
-                look_for_keys=True,
-                allow_agent=True,
-            )
-            is_connected = True
-        except paramiko.AuthenticationException as e:
-            spinner.write(
-                "SSH key authentication failed, trying password authentication (Tip: you can do `ssh-copy-id` to your login node)."
-            )
-            while True:
-                spinner.stop()
-                password = questionary.password(
-                    "Please enter your SSH password:",
-                ).ask()
-                spinner.start()
-                if password is None:
-                    break
-                try:
-                    client.connect(
-                        hostname=hostname,
-                        port=port,
-                        username=username,
-                        password=password,
-                        look_for_keys=False,
-                        allow_agent=False,
-                    )
-                    is_connected = True
-                    break
-                except paramiko.AuthenticationException:
-                    spinner.write("SSH password authentication failed, try again.")
-        if is_connected:
-            stdin, stdout, stderr = client.exec_command(mkdir_command)
-            stdin, stdout, stderr = client.exec_command(full_command)
-            out = stdout.read().decode()
-            err = stderr.read().decode()
-
-            if out:
-                spinner.write(f"Output: {out}")
-            if err:
-                spinner.write(f"Error: {err}")
-            client.close()
-            spinner.text = yaspin_text + " done"
-            spinner.ok("V")
-        else:
-            spinner.text = "Failed to connect via SSH, removeing container..."
+    success = _do_ssh(
+        hostname=hostname,
+        port=port,
+        username=username,
+        commands=[mkdir_command, full_command],
+    )
+    if not success:
+        with yaspin(
+            text="Removing container due to SSH connection failure...",
+            color="red",
+            timer=True,
+        ) as spinner:
             ccs_site.delete(site_id)
             spinner.text = f"Container {site_id} removed due to SSH connection failure."
-            spinner.fail("X")
+            spinner.fail("V")
 
 
 def create_ccs_interactively(
@@ -489,7 +430,7 @@ def create_ccs_interactively(
         wait = True
     if wait:
         site_info = _wait_for_container_ready(ccs_site, site_id)
-        connection_info = _get_connection_info(
+        connection_info = get_connection_info(
             ccs_site,
             site_id,
             site_info=site_info,
@@ -500,7 +441,7 @@ def create_ccs_interactively(
         if cmd:
             if not log_path:
                 log_path = f"~/.twcc_data/log/ccs/{container_name}-{site_id}.log"
-            _do_ssh(
+            _do_ssh_and_remove_container(
                 ccs_site,
                 site_id,
                 connection_info["ssh"],
